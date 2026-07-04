@@ -1,0 +1,17 @@
+name: Distribution safety
+on: [push, pull_request]
+permissions: { contents: read }
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reject implementation and debug artifacts
+        shell: bash
+        run: |
+          set -eu
+          bad=$(find . -type f \( -name '*.swift' -o -name '*.m' -o -name '*.mm' -o -name '*.c' -o -name '*.cpp' -o -name '*.kt' -o -name '*.java' -o -name '*.swiftsourceinfo' -o -name '*.private.swiftinterface' -o -name '*.abi.json' -o -name '*.dSYM' \) ! -name Package.swift -print)
+          test -z "$bad" || { echo "Forbidden files:"; echo "$bad"; exit 1; }
+      - name: Validate manifest placeholders are replaced on tags
+        if: startsWith(github.ref, 'refs/tags/')
+        run: '! grep -R "REPLACE_WITH\|YOUR_GITHUB_USERNAME" Package.swift README.md'
